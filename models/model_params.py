@@ -32,8 +32,8 @@ MpraFullCNN = NeuralNetClassifier(
     models.MpraFullCNN,
 
     optimizer=torch.optim.Adam,
-    optimizer__weight_decay=1e-05,
-    batch_size=256,
+    optimizer__weight_decay=5e-04,
+    batch_size=128,
     lr=1e-4,
     max_epochs=30,
 

@@ -40,10 +40,19 @@ def fit_model(args, X, y):
     else:
         net = model_loader[args.model]
 
-    np.random.seed(1000)
-    torch.manual_seed(1000)
+    if args.tag:
+        np.random.seed(1000 + int(args.tag))
+        torch.manual_seed(1000 + int(args.tag))
+    else:
+        np.random.seed(1000)
+        torch.manual_seed(1000)
+
     net.fit(X, y)
-    save_model(net, args.project, args.model)
+    
+    if args.tag:
+        save_model(net, args.project, f'{args.model}_{args.tag}')
+    else:
+        save_model(net, args.project, args.model)
 
     scores = net.predict_proba(X)
     AUC = roc_auc_score(y, scores[:, 1])
@@ -84,13 +93,14 @@ def fit_calibrator(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', '-p', choices=PROJ_CHOICES,
-                        default='final_1kg',
+                        default='gnom_mpra_mixed',
                         help='Project location for final model')
     parser.add_argument('--model', '-m', default='standard',
                         choices=['standard', 'neighbors'],
                         help='Model to train on')
     parser.add_argument('--evaluate', '-e', action='store_true', default=False,
                         help='Evaluate model on test set after fitting')
+    parser.add_argument('--tag', default=None)
     args = parser.parse_args()
 
     X_train, y_train = load_and_preprocess(args.project, args.model, split='train')
@@ -111,8 +121,8 @@ if __name__ == '__main__':
         evaluate_model(args, X_train, y_train)
 
         # save embeddings
-        save_embeddings(args, X_test, y_test)
+        # save_embeddings(args, X_test, y_test)
         
         # fit calibrator over background pool
-        if args.model == 'neighbors':
-            fit_calibrator(args)
+        # if args.model == 'neighbors':
+        #    fit_calibrator(args)
