@@ -1,3 +1,6 @@
+''' This is not currently used but code could be useful
+'''
+
 import argparse
 import os
 import numpy as np

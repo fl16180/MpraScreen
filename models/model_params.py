@@ -47,6 +47,26 @@ MpraFullCNN = NeuralNetClassifier(
     train_split=None
 )
 
+# for pos-neg
+MpraFullCNN = NeuralNetClassifier(
+    models.MpraFullCNN,
+
+    optimizer=torch.optim.Adam,
+    optimizer__weight_decay=5e-04,
+    batch_size=128,
+    lr=2e-4,
+    max_epochs=40,
+
+    module__n_filt=32,
+    module__width=5,
+    module__n_lin1=400,
+    module__n_lin2=400,
+    
+    callbacks=[auc, apr],
+    iterator_train__shuffle=True,
+    train_split=None
+)
+
 
 class MultiLabelNet(NeuralNetClassifier):
     def get_loss(self, y_pred, y_true, *args, **kwargs):

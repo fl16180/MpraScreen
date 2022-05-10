@@ -50,16 +50,16 @@ def get_cauchy_p(p_mat):
     return cct_stat
 
 
-def concat_addl_scores(project, split='all', na_thresh=0.05):
+def concat_eval_scores(trained_project, predict_project, split='all', na_thresh=0.05):
     """ output score file contains chr, pos, label, nn_scores. For evaluation
     we want additional scores for regbase, eigen, etc. Concat these to the
     score file, excluding non-E116 roadmap scores.
     """
-    proj_dir = PROCESSED_DIR / project
+    predict_dir = PROCESSED_DIR / predict_project
 
-    scores = pd.read_csv(proj_dir / 'output' / f'nn_preds_{project}.csv',
-                         sep=',')    
-    addl = pd.read_csv(proj_dir / f'matrix_{split}.csv', sep=',')
+    scores = pd.read_csv(predict_dir / 'output' / f'preds_trained_on_{trained_project}.csv',
+                         sep=',')
+    addl = pd.read_csv(predict_dir / f'matrix_{split}.csv', sep=',')
     assert all(scores.pos == addl.pos)
 
     addl.drop(['chr', 'pos', 'Label'], axis=1, inplace=True)
@@ -165,26 +165,25 @@ class Evaluator:
             os.makedirs(proj_dir / 'output')
 
         try:
-            df = pd.read_csv(proj_dir / 'output' / f'nn_preds_{self.eval_data}.csv',
+            df = pd.read_csv(proj_dir / 'output' / f'preds_trained_on_{self.trained_data}.csv',
                             sep=',')
-            # assert np.all(self.y == df.Label)
+            assert np.all(self.y == df.Label)
         except (FileNotFoundError, ValueError) as e:
             print(e)
             df = pd.read_csv(proj_dir / f'matrix_{self.split}.csv', sep=',')
             cols = ['chr', 'pos', 'Label']
             df = df.loc[:, cols]
         
-        print(df.shape, self.scores.shape)
-        df[f'mpra_screen'] = self.scores
+        df[f'mpra_screen_trained_on_{self.trained_data}'] = self.scores
         # df['expr_screen'] = self.scores[0]
         # df['allele_screen'] = self.scores[1]
 
-        df.to_csv(proj_dir / 'output' / f'nn_preds_{self.eval_data}.csv',
+        df.to_csv(proj_dir / 'output' / f'preds_trained_on_{self.trained_data}.csv',
                 sep=',', index=False)
 
 
 class MultipleEval:
-    def __init__(self, files, trained_data='gnom_mpra_mixed', model='neighbors'):
+    def __init__(self, files, trained_data='e116_pos_bg', model='neighbors'):
         self.files = files
         self.trained_data = trained_data
         self.cur = 0
@@ -197,10 +196,10 @@ class MultipleEval:
         evl.predict_model()
         evl.save_scores()
 
-        scores = concat_addl_scores(self.files[self.cur], split='all')
+        scores = concat_eval_scores(self.trained_data, self.files[self.cur], split='all')
         scores.index.names = ['scores']
         scores.to_csv(
-            PROCESSED_DIR / self.files[self.cur] / f'output/all_scores_nn_preds_{self.files[self.cur]}.csv',
+            PROCESSED_DIR / self.files[self.cur] / f'output/all_scores_{self.files[self.cur]}.csv',
             index=False)
 
     def eval_all(self):
@@ -212,7 +211,7 @@ class MultipleEval:
         self.mem = np.array(())
 
         for f in self.files:
-            tmp = pd.read_csv(PROCESSED_DIR / f / f'output/all_scores_nn_preds_{f}.csv')
+            tmp = pd.read_csv(PROCESSED_DIR / f / f'output/all_scores_{f}.csv')
             self.mem = np.append(self.mem, tmp[score].values)
 
     def calibrate(self, score='NN_neighbors'):
@@ -223,9 +222,11 @@ class MultipleEval:
 
     def load_holdout_prediction(self, holdout):
         df = pd.read_csv(
-            PROCESSED_DIR / holdout / f'output/all_scores_nn_preds_{holdout}.csv'
+            PROCESSED_DIR / holdout / f'output/all_scores_{holdout}.csv'
         )
-        self.probs = self.calib.transform(df[self.score].values)
+        # self.probs = self.calib.transform(df[self.score].values)
+        self.probs = self.calib.transform(df['mpra_screen_trained_on_e116_pos_bg'].values)
+
         self.label = df['Label'].values
 
     def estimate_recall(self, thresholds):

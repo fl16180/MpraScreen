@@ -92,8 +92,8 @@ def fit_calibrator(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--project', '-p', choices=PROJ_CHOICES,
-                        default='gnom_mpra_mixed',
+    parser.add_argument('--project', '-p',
+                        default='e116_pos_neg',
                         help='Project location for final model')
     parser.add_argument('--model', '-m', default='standard',
                         choices=['standard', 'neighbors'],
@@ -115,7 +115,6 @@ if __name__ == '__main__':
         # test set
         print('Test set: ')
         evaluate_model(args, X_test, y_test)
-
         # training set groups
         print('Train set: ')
         evaluate_model(args, X_train, y_train)
@@ -123,6 +122,6 @@ if __name__ == '__main__':
         # save embeddings
         # save_embeddings(args, X_test, y_test)
         
-        # fit calibrator over background pool
+        # # fit calibrator over background pool
         # if args.model == 'neighbors':
         #    fit_calibrator(args)

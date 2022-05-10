@@ -128,12 +128,13 @@ class RollingDataWindow:
 
 
 class MpraScreen:
-    def __init__(self):
+    def __init__(self, task):
+        self.task = task
         self.roadmap_cols = get_roadmap_col_order(order='marker')
-        self.preprocessor = Processor('final_1kg')
+        self.preprocessor = Processor(task)
         self.preprocessor.load('neighbors')
-        self.net = load_model('final_1kg', 'neighbors')
-        self.calibrator = load_calibrator('final_1kg', 'neighbors')
+        self.net = load_model(task, 'neighbors')
+        # self.calibrator = load_calibrator(task, 'neighbors')
 
     def preprocess(self, X, X_neighbor):
         X[self.roadmap_cols] = np.log(X[self.roadmap_cols] + EPS)
@@ -165,7 +166,7 @@ class MpraScreen:
 
 
 def join_fragments(chrom):
-    fragment_dir = PROCESSED_DIR / 'genomeScreen' / 'fragments'
+    fragment_dir = PROCESSED_DIR / 'genomeScreen2' / 'fragments'
     fragments = os.listdir(fragment_dir)
 
     # collect all score fragments for chrom
@@ -201,7 +202,7 @@ def join_fragments(chrom):
     if frag_table['end'].iloc[-1] != GenRange[chrom] - 10000:
         gaps.append((frag_table['end'].iloc[-1], GenRange[chrom] - 10000))
     gaps = pd.DataFrame(np.array(gaps))
-    gaps.to_csv(PROCESSED_DIR / 'genomeScreen' / f'gaps_chr_{chrom}.csv', index=False)
+    gaps.to_csv(PROCESSED_DIR / 'genomeScreen2' / f'gaps_chr_{chrom}.csv', index=False)
 
     if len(gaps) <= 1:
         print('Loading...')
@@ -227,11 +228,11 @@ def join_fragments(chrom):
         print('Stacking...')
         chrom_scores = pd.concat(dfs, axis=0)
         print('Saving...')
-        chrom_scores.to_csv(PROCESSED_DIR / 'genomeScreen' / f'mpra_screen_chr_{chrom}.csv', index=False, sep='\t')
+        chrom_scores.to_csv(PROCESSED_DIR / 'genomeScreen2' / f'mpra_screen_chr_{chrom}.csv', index=False, sep='\t')
 
 
 def validate_chr_scores(chrom):
-    with open(PROCESSED_DIR / 'genomeScreen' / f'mpra_screen_chr_{chrom}.csv') as f:
+    with open(PROCESSED_DIR / 'genomeScreen2' / f'mpra_screen_chr_{chrom}.csv') as f:
         # reader = csv.reader(f, delimiter='\t')
         reader = csv.reader(f, delimiter=',')
         header = next(reader)
@@ -258,7 +259,7 @@ def sample_for_calibrator(n_samples=5000000):
         n_sample = bed[bed.chr == chrom].shape[0]
         print(chrom, n_sample)
 
-        command = f'shuf -n {n_sample} ../processed/genomeScreen/mpra_screen_chr_{chrom}.csv > ../processed/genomeScreen/tmp_{chrom}.csv'
+        command = f'shuf -n {n_sample} ../processed/genomeScreen2/mpra_screen_chr_{chrom}.csv > ../processed/genomeScreen2/tmp_{chrom}.csv'
         call(command, shell=True)
 
 
@@ -266,7 +267,7 @@ def learn_calibrator():
 
     sample_vals = []
     for chrom in range(1, 23):
-        df = pd.read_csv(PROCESSED_DIR / 'genomeScreen' / f'tmp_{chrom}.csv', sep='\t')
+        df = pd.read_csv(PROCESSED_DIR / 'genomeScreen2' / f'tmp_{chrom}.csv', sep='\t')
         sample_vals.append(df.dropna().iloc[:, 4].values)
 
     all_sample_vals = np.concatenate(sample_vals)
@@ -275,7 +276,7 @@ def learn_calibrator():
     cal = Calibrator()
     cal.fit(all_sample_vals)
 
-    fname = PROCESSED_DIR / 'genomeScreen' / 'background_calibrator.pkl'
+    fname = PROCESSED_DIR / 'genomeScreen2' / 'background_calibrator.pkl'
     with open(fname, 'wb') as f:
         pickle.dump(cal, f)
 
@@ -283,13 +284,13 @@ def learn_calibrator():
 def add_calibrations(chrom):
     # import dask.dataframe as dd
 
-    fname = PROCESSED_DIR / 'genomeScreen' / 'background_calibrator.pkl'
+    fname = PROCESSED_DIR / 'genomeScreen2' / 'background_calibrator.pkl'
     with open(fname, 'rb') as f:
         cal = pickle.load(f)
 
     # for chrom in range(1, 23):
     print(f'Loading {chrom}')
-    df = pd.read_csv(PROCESSED_DIR / 'genomeScreen' / f'mpra_screen_chr_{chrom}.csv', sep='\t')
+    df = pd.read_csv(PROCESSED_DIR / 'genomeScreen2' / f'mpra_screen_chr_{chrom}.csv', sep='\t')
     df.drop('rs', axis=1, inplace=True)
     df.dropna(inplace=True)
     df.rename(columns={'pos': 'pos_start'}, inplace=True)
@@ -300,7 +301,7 @@ def add_calibrations(chrom):
     df['MPRA_PHRED'] = -10 * np.log10(1 - df['MPRA_score'] + 1e-8)
     
     print('Saving')
-    df.to_csv(PROCESSED_DIR / 'genomeScreen' / 'scores' / f'mpra_screen_chr_{chrom}.tsv', sep='\t', index=False)
+    df.to_csv(PROCESSED_DIR / 'genomeScreen2' / 'scores' / f'mpra_screen_chr_{chrom}.tsv', sep='\t', index=False)
 
 
 if __name__ == '__main__':
@@ -343,7 +344,7 @@ if __name__ == '__main__':
             node_pred = pd.concat([node_pred, bed], axis=0)
 
         node_pred.to_csv(
-            PROCESSED_DIR / 'genomeScreen' / 'fragments' / f'node_{args.job}_chr_{args.chr}_start_{args.start}_end_{args.end}.csv',
+            PROCESSED_DIR / 'genomeScreen2' / 'fragments' / f'node_{args.job}_chr_{args.chr}_start_{args.start}_end_{args.end}.csv',
             index=False
         )
 

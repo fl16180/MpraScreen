@@ -10,9 +10,18 @@ from datasets import load_data_set
 SPLIT_CHOICES = [None, 'train-test', 'all']
 
 
+def safe_make_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
 def setup(args):
 
     project_dir = PROCESSED_DIR / args.project
+
+    safe_make_dir(project_dir / 'models')
+    safe_make_dir(project_dir / 'neighbors')
+    safe_make_dir(project_dir / 'output')
 
     # load or create variants bedfile
     try:
@@ -108,7 +117,7 @@ def process_datasets(args, bedfile, split='all', merge='inner'):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--project', '-p', choices=PROJ_CHOICES, required=True)
+    parser.add_argument('--project', '-p', required=True)
     parser.add_argument('--bed', '-b', default=False, action='store_true',
                         help='(re-)extract variant bed from target data')
     parser.add_argument('--roadmap', '-r', default=False, action='store_true',

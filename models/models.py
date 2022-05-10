@@ -99,6 +99,10 @@ class MpraFullCNN(nn.Module):
         self.conv3 = nn.Conv1d(n_filt, n_filt, kernel_size=width)
 
         self.dense_sc = nn.Linear(self.lin, n_lin1)
+        # self.dense_sc = nn.Sequential(
+        #     nn.Linear(self.lin, n_lin1),
+        #     nn.Linear(n_lin1, n_lin1))
+
 
         n_feat = self._get_conv_output(conv_dim)
 

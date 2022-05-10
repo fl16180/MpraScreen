@@ -9,6 +9,8 @@ from sklearn.preprocessing import OneHotEncoder
 from utils.bigwig_utils import pull_roadmap_features, compile_roadmap_features
 from constants import *
 
+import pyBigWig
+
 
 def load_mpra_data(dataset, benchmarks=False):
     ''' processes raw MPRA data files and optionally benchmark files '''
@@ -149,6 +151,43 @@ def extract_roadmap(bedfile, outpath, project,
                                      feature_dir=loc,
                                      keep_rs_col=keep_rs_col,
                                      summarize=summarize)
+
+
+def extract_roadmap_new(bedfile, outpath):
+
+    roadmap_filename = '/oak/stanford/groups/zihuai/SemiSupervise/bigwig/rollmean/DNase/XXXX-DNase.imputed.pval.signal.bigwig'
+    ROADMAP_MARKERS = ['DNase', 'H3K27ac', 'H3K27me3', 'H3K36me3',
+                    'H3K4me1', 'H3K4me3', 'H3K9ac', 'H3K9me3']
+    Tissue_Markers = ["E%03d" % i for i in range(1, 130) if i not in [60, 64]]
+
+    matrix = np.zeros((bedfile.shape[0], len(Tissue_Markers) + 2))
+
+    col_names = []
+    for i, E in enumerate(Tissue_Markers):
+        for j, rm in enumerate(ROADMAP_MARKERS):
+            roadmap_file = roadmap_filename.replace("DNase",rm).replace("XXXX",E)
+            bwg = pyBigWig.open(roadmap_file)
+
+            col_names.append(f'{rm}-{E}')
+
+            bed_arr = bedfile[['chr', 'pos']].values.astype(np.int64)
+            matrix[:, :2] = bed_arr
+
+            print(f'\tExtracting {rm}-{E}: ')
+            for row in tqdm(range(bed_arr.shape[0])):
+                chr_ = bed_arr[row, 0]
+                pos = bed_arr[row, 1]
+
+                val = bwg.values("chr" + str(chr_), pos, pos+1)[0]
+                matrix[row, i*8 + j + 2] = val
+
+    df = pd.DataFrame(matrix, columns=['chr', 'pos'] + col_names)
+    df.to_csv(outpath, sep='\t', index=False)
+
+                # try:
+                #     variant_row.append(
+                # except Exception:
+                #     variant_row.append(float("NaN"))
 
 
 def extract_genonet(bedfile, outpath, summarize='mean'):
