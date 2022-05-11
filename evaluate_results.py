@@ -74,34 +74,34 @@ if __name__ == '__main__':
 
     eval_out_dir = Path('./analysis')
 
-    # # ---------- Cross-eval both models on both test sets ----------- #
-    # for trained_project in ['e116_pos_bg', 'e116_pos_neg']:
-    #     for to_eval in ['e116_pos_bg', 'e116_pos_neg']:
-    #         print(f'Predicting: {trained_project} on {to_eval}')
-    #         evl = Evaluator(trained_data=trained_project, eval_data=to_eval)
-    #         evl.setup_data(model='neighbors', split='test')
-    #         evl.predict_model()
-    #         evl.save_scores()
+    # ---------- Cross-eval both models on both test sets ----------- #
+    for trained_project in ['e116_pos_bg', 'e116_pos_neg']:
+        for to_eval in ['e116_pos_bg', 'e116_pos_neg']:
+            print(f'Predicting: {trained_project} on {to_eval}')
+            evl = Evaluator(trained_data=trained_project, eval_data=to_eval)
+            evl.setup_data(model='neighbors', split='test')
+            evl.predict_model()
+            evl.save_scores()
 
-    # # ---------- Combine all model performances ------------ #
-    # for to_eval in ['e116_pos_bg', 'e116_pos_neg']:
-    #     scores = concat_all_scores(to_eval, split='test')
-    #     scores = add_genonet_scores(to_eval, scores)
-    #     scores.index.names = ['scores']
-    #     scores.to_csv(PROCESSED_DIR / to_eval / f'output/all_scores_{to_eval}.csv',
-    #                 index=False)
+    # ---------- Combine all model performances ------------ #
+    for to_eval in ['e116_pos_bg', 'e116_pos_neg']:
+        scores = concat_all_scores(to_eval, split='test')
+        scores = add_genonet_scores(to_eval, scores)
+        scores.index.names = ['scores']
+        scores.to_csv(PROCESSED_DIR / to_eval / f'output/all_scores_{to_eval}.csv',
+                    index=False)
     
-    #     scores_clean = scores.drop_duplicates(subset=['chr', 'pos', 'Label'])
-    #     auc_scores = score_metric_comparison(scores_clean, 'AUC')
-    #     auc_scores = auc_scores.to_frame(name='test_auc')
+        scores_clean = scores.drop_duplicates(subset=['chr', 'pos', 'Label'])
+        auc_scores = score_metric_comparison(scores_clean, 'AUC')
+        auc_scores = auc_scores.to_frame(name='test_auc')
 
-    #     aupr_scores = score_metric_comparison(scores_clean, 'APR')
-    #     aupr_scores = aupr_scores.to_frame(name='test_aupr')
+        aupr_scores = score_metric_comparison(scores_clean, 'APR')
+        aupr_scores = aupr_scores.to_frame(name='test_aupr')
 
-    #     tab = pd.merge(auc_scores, aupr_scores, left_index=True, right_index=True)
-    #     tab.index.names = ['scores']
-    #     tab.reset_index().to_csv(eval_out_dir / f'score_comparison_{to_eval}.csv', index=False)
-    #     print(tab)
+        tab = pd.merge(auc_scores, aupr_scores, left_index=True, right_index=True)
+        tab.index.names = ['scores']
+        tab.reset_index().to_csv(eval_out_dir / f'score_comparison_{to_eval}.csv', index=False)
+        print(tab)
 
 
     ############ Precision analysis #################

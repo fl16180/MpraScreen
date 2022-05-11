@@ -55,7 +55,7 @@ def setup(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--project', '-p', choices=PROJ_CHOICES, required=True)
+    parser.add_argument('--project', '-p', required=True)
     parser.add_argument('--extract', '-e', default=False, action='store_true',
                         help='extract neighboring Roadmap data')
     parser.add_argument('--tissue', '-t', default='all', type=str,
